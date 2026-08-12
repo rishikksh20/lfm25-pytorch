@@ -1,9 +1,11 @@
-# LFM2.5-2.6B PyTorch
+# LFM2.5 2.6B: Liquid Foundation Models
 
 A minimal PyTorch implementation of
 [`LiquidAI/LFM2.5-2.6B`](https://huggingface.co/LiquidAI/LFM2.5-2.6B).
 LFM2.5 uses the LFM2 hybrid architecture and updates the vocabulary, context
 length, RoPE base, tokenizer, and post-training behavior.
+
+📖 LMF2 Docs: [lfm2 technical docs](https://arxiv.org/pdf/2511.23404)
 
 ## Setup
 
