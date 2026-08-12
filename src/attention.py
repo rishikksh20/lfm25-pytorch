@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange
 from torch import nn, einsum
-from modules import apply_rope, RMSNorm
+from src.modules import apply_rope, RMSNorm
 
 def l2norm(x, dim=-1, eps=1e-6):
     """Unit L2 normalisation without a learnable scale (matches FLA / HF convention)."""

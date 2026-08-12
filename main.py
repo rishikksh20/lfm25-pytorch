@@ -3,11 +3,11 @@ from config import LFM2Config
 from huggingface_hub import snapshot_download
 from lfm2 import LFM2ForCausalLM
 from safetensors.torch import load_file
-from sampling import advance_decoding
-from tokenizer import LFM2Tokenizer
+from src.sampling import advance_decoding
+from src.tokenizer import LFM2Tokenizer
 import torch
 import os
-from utils import load_weights_into_lfm2
+from src.utils import load_weights_into_lfm2
 
 # Configuration
 

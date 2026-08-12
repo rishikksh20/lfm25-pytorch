@@ -1,10 +1,10 @@
-from attention import GQAttention
+from src.attention import GQAttention
 from config import LFM2Config
-from modules import GatedFeedForward, LFM2ConvBlock, RMSNorm, rope_rotate
+from src.modules import GatedFeedForward, LFM2ConvBlock, RMSNorm, rope_rotate
 from torch import nn
 import torch
 import torch.nn.functional as F
-from utils import model_memory_size
+from src.utils import model_memory_size
 
 class LFM2Block(nn.Module):
     def __init__(self, config, layer_idx: int):

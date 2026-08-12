@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+
+hf/
+LFM2.5-2.6B/
+uv.lock
