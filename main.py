@@ -10,8 +10,23 @@ import os
 from src.utils import load_weights_into_lfm2
 
 # Configuration
+# 1. Check for NVIDIA CUDA (GPU)
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    print("Using NVIDIA CUDA GPU")
 
-device = torch.device("cpu")
+# 2. Check for Apple Silicon GPU (M1, M2, M3, M4, etc.)
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print("Using Apple Silicon GPU (MPS)")
+
+# 3. Fallback to standard CPU
+else:
+    device = torch.device("cpu")
+    print("Using CPU")
+
+print(f"Active PyTorch device set to: {device}")
+
 repo_id = "LiquidAI/LFM2.5-2.6B"
 local_dir = Path(repo_id).parts[-1]
 config = LFM2Config()
@@ -104,7 +119,7 @@ print("Assistant: ", end="", flush=True)
 for token in advance_decoding(
     model=model,
     token_ids=input_token_ids_tensor,
-    max_new_tokens=200,
+    max_new_tokens=8192,
     eos_token_id=tokenizer.eos_id,
     temperature=0.1,
     top_k=50,
