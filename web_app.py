@@ -4,6 +4,7 @@ import os
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from uuid import UUID, uuid4
 
 import torch
@@ -175,18 +176,20 @@ def event(event_type: str, **data) -> str:
 
 
 def stream_reply(chat: dict):
+    response_started = perf_counter()
     chat_id = UUID(chat["id"])
-    prompt = build_chat_prompt(chat["messages"])
-    token_ids = torch.tensor(tokenizer.encode(prompt), device=device).unsqueeze(0)
     generated_ids = []
     emitted_thinking = ""
     emitted_answer = ""
     error_message = None
+    generation_seconds = 0.0
 
     try:
+        prompt = build_chat_prompt(chat["messages"])
+        token_ids = torch.tensor(tokenizer.encode(prompt), device=device).unsqueeze(0)
         # Generation uses a mutable model cache, so only one reply runs at a time.
         with generation_lock:
-            for token in advance_decoding(
+            decoding = advance_decoding(
                 model=model,
                 token_ids=token_ids,
                 max_new_tokens=MAX_NEW_TOKENS,
@@ -196,7 +199,15 @@ def stream_reply(chat: dict):
                 top_p=None,
                 repetition_penalty=1.1,
                 window_size=64,
-            ):
+            )
+            while True:
+                token_started = perf_counter()
+                try:
+                    token = next(decoding)
+                except StopIteration:
+                    generation_seconds += perf_counter() - token_started
+                    break
+                generation_seconds += perf_counter() - token_started
                 token_id = token.squeeze().tolist()
                 generated_ids.extend([token_id] if isinstance(token_id, int) else token_id)
                 decoded_text = tokenizer.decode(generated_ids)
@@ -219,10 +230,21 @@ def stream_reply(chat: dict):
         error_message = str(error)
         yield event("error", message="Generation failed.")
     finally:
+        finished = perf_counter()
+        total_seconds = finished - response_started
+        stats = {
+            "generated_tokens": len(generated_ids),
+            "tokens_per_second": (
+                len(generated_ids) / generation_seconds if generation_seconds > 0 else 0.0
+            ),
+            "generation_seconds": generation_seconds,
+            "total_seconds": total_seconds,
+        }
         assistant_message = {
             "role": "assistant",
             "thinking": emitted_thinking,
             "content": emitted_answer,
+            "stats": {key: round(value, 3) for key, value in stats.items()},
             "created_at": utc_now(),
         }
         if error_message:
@@ -235,6 +257,7 @@ def stream_reply(chat: dict):
             save_chat(latest_chat)
             active_chats.discard(chat_id)
 
+    yield event("stats", **assistant_message["stats"])
     yield event("done", chat_id=str(chat_id))
 
 

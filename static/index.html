@@ -140,6 +140,7 @@
     .answer code { padding: 2px 5px; border-radius: 5px; background: #24272e; color: #d8f5b2; font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
     .answer pre { margin: 12px 0; padding: 14px; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #101115; }
     .answer pre code { padding: 0; background: transparent; color: #d9dde5; }
+    .response-stats { margin-top: 11px; color: #747b87; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .message.assistant.streaming .answer::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 3px; vertical-align: -.15em; background: var(--accent); animation: blink .8s steps(2) infinite; }
     .stream-error { color: #ffaaa4; }
 
@@ -290,7 +291,19 @@
       scrollMessages();
     }
 
-    function addAssistantMessage(thinking = "", content = "", streaming = false) {
+    function setResponseStats(element, stats) {
+      if (!stats || stats.total_seconds == null) {
+        element.hidden = true;
+        return;
+      }
+      const speed = Number(stats.tokens_per_second || 0).toFixed(2);
+      const total = Number(stats.total_seconds || 0).toFixed(2);
+      const tokens = Number(stats.generated_tokens || 0);
+      element.textContent = `${speed} tok/s · ${total} s total · ${tokens} tokens`;
+      element.hidden = false;
+    }
+
+    function addAssistantMessage(thinking = "", content = "", streaming = false, stats = null) {
       document.querySelector(".welcome")?.remove();
       const message = document.createElement("article");
       message.className = `message assistant${streaming ? " streaming" : ""}`;
@@ -308,10 +321,13 @@
       const answer = document.createElement("div");
       answer.className = "answer";
       answer.innerHTML = renderMarkdown(content);
-      message.append(label, details, answer);
+      const responseStats = document.createElement("div");
+      responseStats.className = "response-stats";
+      setResponseStats(responseStats, stats);
+      message.append(label, details, answer, responseStats);
       messages.append(message);
       scrollMessages();
-      return { message, details, thought, answer, answerText: content };
+      return { message, details, thought, answer, responseStats, answerText: content };
     }
 
     function scrollMessages() {
@@ -372,7 +388,9 @@
       messages.innerHTML = "";
       for (const message of chat.messages) {
         if (message.role === "user") addUserMessage(message.content);
-        if (message.role === "assistant") addAssistantMessage(message.thinking || "", message.content || "");
+        if (message.role === "assistant") {
+          addAssistantMessage(message.thinking || "", message.content || "", false, message.stats);
+        }
       }
       if (!chat.messages.length) showWelcome();
       document.body.classList.remove("sidebar-open");
@@ -422,6 +440,8 @@
             } else if (event.type === "answer_replace") {
               reply.answerText = event.text;
               reply.answer.innerHTML = renderMarkdown(reply.answerText);
+            } else if (event.type === "stats") {
+              setResponseStats(reply.responseStats, event);
             } else if (event.type === "error") {
               reply.answer.classList.add("stream-error");
               reply.answer.textContent = event.message;

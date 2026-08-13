@@ -38,6 +38,7 @@ The Web UI provides:
 
 - Character-by-character streamed responses with lightweight Markdown
   formatting.
+- Generated-token throughput and total response time shown after each reply.
 - Multi-turn conversations that include saved messages in subsequent prompts.
 - A history sidebar for restoring previous chats by UUID.
 - Collapsed **Thinking** panels for text generated inside `<think>...</think>`;
