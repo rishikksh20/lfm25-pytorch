@@ -59,8 +59,7 @@ The model contains 30 hybrid decoder blocks:
 
 The full layer schedule is defined in [`config.py`](config.py). Architecture
 references are available in the
-[`LFM2 technical report`](https://arxiv.org/abs/2511.23404) and the
-[`transformers` LFM2 implementation](https://github.com/huggingface/transformers/blob/main/src/transformers/models/lfm2/modeling_lfm2.py).
+[`LFM2 technical report`](https://arxiv.org/abs/2511.23404).
 
 ## Code Pointers
 
