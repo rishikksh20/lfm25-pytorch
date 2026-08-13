@@ -19,6 +19,39 @@ uv run python main.py
 The first run downloads the two Hugging Face weight shards. `main.py` uses the
 CPU by default; change `device` to `torch.device("cuda")` when CUDA is available.
 
+## Web Chat UI
+
+The project includes a local FastAPI chat service and a responsive single-page
+interface in [`static/index.html`](static/index.html). Start it with:
+
+```shell
+uv run --with-requirements requirements-web.txt \
+  uvicorn web_app:app --host 127.0.0.1 --port 8000
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000). The server loads the
+same local LFM2.5-2.6B checkpoint used by `main.py`, automatically selecting
+CUDA, Apple MPS, or CPU. Initial startup can take some time while the checkpoint
+is loaded into memory.
+
+The Web UI provides:
+
+- Character-by-character streamed responses with lightweight Markdown
+  formatting.
+- Multi-turn conversations that include saved messages in subsequent prompts.
+- A history sidebar for restoring previous chats by UUID.
+- Collapsed **Thinking** panels for text generated inside `<think>...</think>`;
+  the main reply displays only the answer produced after `</think>`.
+- Local JSON persistence in `logs/<uuid>.json`, with separate `thinking` and
+  `content` fields for assistant messages.
+
+Set `LFM_MAX_NEW_TOKENS` to change the maximum response length. For example:
+
+```shell
+LFM_MAX_NEW_TOKENS=2048 uv run --with-requirements requirements-web.txt \
+  uvicorn web_app:app --host 127.0.0.1 --port 8000
+```
+
 ## LFM2.5-2.6B Config
 
 The values below come from the checkpoint's

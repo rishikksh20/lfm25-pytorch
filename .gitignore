@@ -5,3 +5,4 @@ __pycache__/
 hf/
 LFM2.5-2.6B/
 uv.lock
+logs/
