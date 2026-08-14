@@ -127,6 +127,10 @@
 
     details.thinking { margin: 0 0 15px; color: var(--muted); }
     details.thinking summary { width: fit-content; padding: 5px 9px; border-radius: 7px; background: var(--panel); cursor: pointer; font-size: 12px; user-select: none; }
+    details.thinking.thinking-active summary {
+      transform-origin: left center;
+      animation: thinking-jelly 1.35s ease-in-out infinite, thinking-fade 1.35s ease-in-out infinite;
+    }
     details.thinking pre { max-height: 260px; margin: 8px 0 0; padding: 12px; overflow: auto; border-left: 2px solid #41464f; color: #aeb3bd; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
     .answer { line-height: 1.7; overflow-wrap: anywhere; }
     .answer > :first-child { margin-top: 0; }
@@ -154,6 +158,19 @@
     .backdrop { display: none; }
 
     @keyframes blink { 50% { opacity: 0; } }
+    @keyframes thinking-jelly {
+      0%, 100% { transform: scale(1); }
+      35% { transform: scaleX(1.035) scaleY(.975); }
+      65% { transform: scaleX(.99) scaleY(1.015); }
+    }
+    @keyframes thinking-fade {
+      0%, 100% { background-color: var(--panel); color: var(--muted); }
+      50% { background-color: #27311d; color: #d4f7a7; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      details.thinking.thinking-active summary { animation: none; color: #d4f7a7; }
+    }
 
     @media (max-width: 760px) {
       .shell { display: block; }
@@ -311,8 +328,8 @@
       label.className = "label";
       label.textContent = "LFM2";
       const details = document.createElement("details");
-      details.className = "thinking";
-      details.hidden = !thinking;
+      details.className = `thinking${streaming ? " thinking-active" : ""}`;
+      details.hidden = !thinking && !streaming;
       const summary = document.createElement("summary");
       summary.textContent = "Thinking";
       const thought = document.createElement("pre");
@@ -428,16 +445,22 @@
             const event = JSON.parse(line);
             if (event.type === "thinking") {
               reply.details.hidden = false;
+              reply.details.classList.add("thinking-active");
               reply.thought.textContent += event.delta;
             } else if (event.type === "thinking_replace") {
-              reply.details.hidden = !event.text;
+              reply.details.hidden = false;
+              reply.details.classList.add("thinking-active");
               reply.thought.textContent = event.text;
+            } else if (event.type === "thinking_end") {
+              reply.details.classList.remove("thinking-active");
             } else if (event.type === "answer") {
+              reply.details.classList.remove("thinking-active");
               reply.answerText += event.delta;
               reply.answer.innerHTML = renderMarkdown(reply.answerText);
               scrollMessages();
               await new Promise(resolve => setTimeout(resolve, 5));
             } else if (event.type === "answer_replace") {
+              reply.details.classList.remove("thinking-active");
               reply.answerText = event.text;
               reply.answer.innerHTML = renderMarkdown(reply.answerText);
             } else if (event.type === "stats") {
@@ -449,9 +472,13 @@
           }
           if (done) break;
         }
+        reply.details.classList.remove("thinking-active");
+        reply.details.hidden = !reply.thought.textContent;
         reply.message.classList.remove("streaming");
       } catch (error) {
         if (reply) {
+          reply.details.classList.remove("thinking-active");
+          reply.details.hidden = !reply.thought.textContent;
           reply.message.classList.remove("streaming");
           const answer = reply.answer;
           answer.classList.add("stream-error");

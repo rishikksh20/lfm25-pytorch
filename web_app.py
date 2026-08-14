@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent
 LOGS_DIR = Path(os.getenv("LFM_LOGS_DIR", str(ROOT / "logs")))
 REPO_ID = "LiquidAI/LFM2.5-2.6B"
 MODEL_DIR = ROOT / Path(REPO_ID).name
-MAX_NEW_TOKENS = int(os.getenv("LFM_MAX_NEW_TOKENS", "1024"))
+MAX_NEW_TOKENS = int(os.getenv("LFM_MAX_NEW_TOKENS", "8192"))
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -181,6 +181,7 @@ def stream_reply(chat: dict):
     generated_ids = []
     emitted_thinking = ""
     emitted_answer = ""
+    emitted_thinking_end = False
     error_message = None
     generation_seconds = 0.0
 
@@ -219,6 +220,10 @@ def stream_reply(chat: dict):
                 elif thinking != emitted_thinking:
                     yield event("thinking_replace", text=thinking)
                 emitted_thinking = thinking
+
+                if not emitted_thinking_end and "</think>" in decoded_text:
+                    yield event("thinking_end")
+                    emitted_thinking_end = True
 
                 if answer.startswith(emitted_answer):
                     for character in answer[len(emitted_answer) :]:
